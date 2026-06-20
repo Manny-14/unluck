@@ -1,0 +1,8 @@
+.agents/
+.DS_Store
+node_modules/
+dist/
+.env*
+!.env.example
+product_concept.md
+

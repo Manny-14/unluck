@@ -1,0 +1,75 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  name        String?
+  createdAt   DateTime     @default(now())
+  identities  Identity[]
+  habits      Habit[]
+  tasks       Task[]
+  bundleRules BundleRule[]
+}
+
+model Identity {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habits    Habit[]
+  tasks     Task[]
+  createdAt DateTime @default(now())
+}
+
+model Habit {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  isArchived  Boolean    @default(false)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identityId  String?
+  identity    Identity?  @relation(fields: [identityId], references: [id], onDelete: SetNull)
+  logs        HabitLog[]
+  tasksAsCue  Task[]     @relation("HabitCue")
+  createdAt   DateTime   @default(now())
+}
+
+model HabitLog {
+  id          String   @id @default(uuid())
+  habitId     String
+  habit       Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+}
+
+model Task {
+  id             String    @id @default(uuid())
+  title          String
+  note           String?
+  dueDate        DateTime?
+  completedAt    DateTime?
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identityId     String?
+  identity       Identity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
+  cueHabitId     String?
+  cueHabit       Habit?    @relation("HabitCue", fields: [cueHabitId], references: [id], onDelete: SetNull)
+  temptationWant String?
+  createdAt      DateTime  @default(now())
+}
+
+model BundleRule {
+  id        String   @id @default(uuid())
+  needText  String
+  wantText  String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
