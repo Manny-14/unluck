@@ -1,32 +1,40 @@
-/* Global Design System & CSS Reset */
+/* Cozy Wood-Framed Desktop Accessory Design System */
 :root {
-  /* HSL Color Palette (Dark Theme Baseline) */
-  --bg-color: hsl(222, 24%, 7%);
-  --card-bg: hsl(223, 20%, 12%);
-  --card-bg-hover: hsl(223, 20%, 15%);
-  --border-color: hsla(0, 0%, 100%, 0.07);
-  --border-focus: hsl(230, 75%, 65%);
+  /* Earthy Color Palette */
+  --bg-color: hsl(43, 20%, 92%);        /* Warm Ash desk surface */
+  --card-bg: hsl(45, 30%, 98%);         /* Cream paper / light wood face */
+  --card-bg-hover: hsl(45, 25%, 96%);   /* Warm hover highlight */
+  --border-color: hsl(43, 15%, 83%);    /* Soft warm outline */
+  --border-wood: hsl(20, 30%, 25%);     /* Dark walnut wood accent */
+  --border-oak: hsl(30, 45%, 35%);      /* Polished oak accent */
   
   /* Brand/Accent Colors */
-  --primary: hsl(142, 70%, 45%);        /* Habit/Success Teal-Green */
-  --primary-glow: hsla(142, 70%, 45%, 0.15);
-  --secondary: hsl(230, 75%, 65%);      /* Calming Indigo */
-  --secondary-glow: hsla(230, 75%, 65%, 0.15);
-  --accent: hsl(280, 75%, 65%);         /* Identity Purple */
+  --primary: hsl(140, 25%, 28%);        /* Pine Forest Green */
+  --primary-glow: rgba(54, 89, 66, 0.08);
+  --secondary: hsl(205, 27%, 40%);      /* Slate/Dusty Blue */
+  --secondary-glow: rgba(74, 107, 130, 0.08);
+  --accent: hsl(18, 38%, 56%);          /* Terracotta / raw leather */
   
-  /* Text Scales */
-  --text-primary: hsl(210, 20%, 98%);
-  --text-secondary: hsl(215, 15%, 70%);
-  --text-muted: hsl(215, 10%, 50%);
+  /* Text Tones (Warm Espresso contrast) */
+  --text-primary: hsl(15, 10%, 15%);    /* Espresso black-brown */
+  --text-secondary: hsl(15, 6%, 38%);   /* Muted grey-brown */
+  --text-muted: hsl(20, 5%, 55%);       /* Warm grey */
   
-  /* Layout & Animations */
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.35);
-  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  /* Typography & Layouts */
+  --font-serif: 'Lora', 'Georgia', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  
+  /* Tactile Shadows (Physical blocks on a desk) */
+  --shadow-block: 0 1px 3px rgba(44, 37, 35, 0.08), 
+                  0 4px 12px rgba(44, 37, 35, 0.05),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-block-hover: 0 4px 16px rgba(44, 37, 35, 0.12), 
+                        0 8px 24px rgba(44, 37, 35, 0.08),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --shadow-inset: inset 0 2px 5px rgba(44, 37, 35, 0.06);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Reset */
@@ -43,25 +51,19 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  line-height: 1.5;
-  overflow-x: hidden;
+  line-height: 1.6;
 }
 
-/* Typography & Layouts */
+/* Typography */
 h1, h2, h3, h4 {
+  font-family: var(--font-serif);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
-a {
-  color: var(--secondary);
-  text-decoration: none;
-  transition: var(--transition);
-}
-
-a:hover {
-  filter: brightness(1.2);
+p {
+  color: var(--text-secondary);
 }
 
 /* Scrollbar styling */
@@ -72,69 +74,56 @@ a:hover {
   background: var(--bg-color);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--card-bg-hover);
+  background: var(--border-color);
   border-radius: var(--radius-sm);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
 
-/* Custom Utilities */
+/* Layout Utilities */
 .glass-container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem;
+  padding: 3rem 1.5rem;
 }
 
-.glass-card {
+/* Wood-Framed Tactile Card */
+.wood-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
+  border-top: 5px solid var(--border-wood); /* Walnut top-edge framing */
+  border-radius: var(--radius-sm);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-block);
   transition: var(--transition);
   position: relative;
-  overflow: hidden;
 }
 
-.glass-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
-  pointer-events: none;
+.wood-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-block-hover);
+  border-top-color: var(--border-oak); /* shifts to warm oak tone on active focus */
 }
 
-.glass-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: var(--shadow-md);
+/* Sidebar divider style */
+.wood-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border-color) 15%, var(--border-color) 85%, transparent);
+  border: none;
+  margin: 1.5rem 0;
 }
 
-.glow-primary:hover {
-  box-shadow: 0 8px 30px var(--primary-glow);
-  border-color: var(--primary);
-}
-
-.glow-secondary:hover {
-  box-shadow: 0 8px 30px var(--secondary-glow);
-  border-color: var(--secondary);
-}
-
-/* Buttons */
+/* Buttons (Tactile Block style) */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.65rem 1.25rem;
   font-family: var(--font-sans);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   border-radius: var(--radius-sm);
-  border: none;
   cursor: pointer;
   transition: var(--transition);
   outline: none;
@@ -142,20 +131,26 @@ a:hover {
 
 .btn-primary {
   background: var(--primary);
-  color: var(--bg-color);
-  box-shadow: 0 4px 14px var(--primary-glow);
+  color: var(--card-bg);
+  border: 1px solid var(--border-wood);
+  box-shadow: 0 1.5px 3px rgba(44, 37, 35, 0.15);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--primary-glow);
-  filter: brightness(1.1);
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-inset);
 }
 
 .btn-secondary {
-  background: transparent;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(44, 37, 35, 0.05);
 }
 
 .btn-secondary:hover {
@@ -167,7 +162,7 @@ a:hover {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -176,5 +171,5 @@ a:hover {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
 }

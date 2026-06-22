@@ -12,30 +12,29 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Sample habits & tasks to preview design
+  // Sample data matching our detailed schema mechanics
   const identities = [
-    { name: "Focused Writer", votes: 12 },
-    { name: "Consistent Athlete", votes: 24 },
-    { name: "Lifelong Learner", votes: 8 }
+    { name: "Consistent Athlete", level: "Amateur", votes: 24, momentum: 80, accent: "var(--primary)" },
+    { name: "Focused Writer", level: "Novice", votes: 12, momentum: 45, accent: "var(--secondary)" },
+    { name: "Lifelong Learner", level: "Beginner", votes: 8, momentum: 20, accent: "var(--accent)" }
   ];
 
   const sampleRules = [
-    { need: "Run on the treadmill", want: "Watch my favorite Netflix show" },
-    { need: "Do weekly planning", want: "Listen to new music releases" }
+    { need: "Walk on the treadmill", want: "Watch my favorite TV series" },
+    { need: "Complete weekly planner", want: "Listen to new music releases" }
   ];
 
   const checkBackend = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Connect to backend (port 5001)
       const res = await fetch("http://localhost:5001/api/health");
-      if (!res.ok) throw new Error("Backend response error");
+      if (!res.ok) throw new Error("Backend offline");
       const data = await res.json();
       setHealth(data);
     } catch (err) {
       console.error(err);
-      setError("Unable to connect to local backend on port 5001. Ensure it is running.");
+      setError("Unable to connect to local backend.");
     } finally {
       setLoading(false);
     }
@@ -47,114 +46,182 @@ function App() {
 
   return (
     <div className="glass-container animate-fade-in" style={{ maxWidth: "1000px" }}>
-      {/* Header */}
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "3rem" }}>
+      
+      {/* Header Desk-Plate Style */}
+      <header style={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "flex-start", 
+        marginBottom: "3rem",
+        paddingBottom: "1.5rem",
+        borderBottom: "2px solid var(--border-color)"
+      }}>
         <div>
-          <h1 style={{ fontSize: "2.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            Unluck <span style={{ fontSize: "1rem", color: "var(--text-muted)", fontWeight: "normal", letterSpacing: "0" }}>(Atomic Habits Hub)</span>
+          <h1 style={{ 
+            fontSize: "2.75rem", 
+            fontFamily: "var(--font-serif)", 
+            color: "var(--text-primary)",
+            lineHeight: 1.1 
+          }}>
+            Unluck
           </h1>
-          <p style={{ color: "var(--text-secondary)", marginTop: "0.25rem" }}>
-            "Every action you take is a vote for the type of person you wish to become."
+          <p style={{ 
+            color: "var(--text-secondary)", 
+            fontFamily: "var(--font-serif)",
+            fontStyle: "italic",
+            fontSize: "1.1rem",
+            marginTop: "0.5rem"
+          }}>
+            “Every action you take is a vote for the type of person you wish to become.”
           </p>
         </div>
 
-        {/* Server Status Indicator */}
-        <div 
+        {/* Server Status Badge */}
+        <button 
           onClick={checkBackend}
+          className="btn btn-secondary"
           style={{ 
             display: "flex", 
             alignItems: "center", 
             gap: "0.5rem", 
-            padding: "0.5rem 1rem", 
-            borderRadius: "20px", 
-            background: "var(--card-bg)", 
-            border: "1px solid var(--border-color)",
-            cursor: "pointer"
+            borderRadius: "var(--radius-sm)", 
+            padding: "0.5rem 0.75rem",
+            fontSize: "0.8rem"
           }}
         >
           {loading ? (
-            <RefreshCw size={14} className="spin" style={{ animation: "spin 2s linear infinite" }} />
+            <RefreshCw size={12} className="spin" style={{ animation: "spin 2s linear infinite" }} />
           ) : error ? (
-            <AlertCircle size={14} color="coral" />
+            <AlertCircle size={12} color="coral" />
           ) : (
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--primary)" }}></span>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--primary)" }}></span>
           )}
-          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 500 }}>
-            {loading ? "Checking..." : error ? "Backend Offline" : `Backend Connected (${health ? "Online" : "Unknown"})`}
+          <span style={{ fontWeight: 600 }}>
+            {loading ? "Checking..." : error ? "Server Offline" : `Server Connected (${health ? "Online" : "Unknown"})`}
           </span>
-        </div>
+        </button>
       </header>
 
-      {/* Main Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
+      {/* Main Grid: Structural wood dividers and bevel blocks */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.75rem" }}>
         
-        {/* Identity Cards (Casting Votes) */}
-        <section className="glass-card glow-secondary" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Award color="var(--secondary)" size={24} />
-            <h2>Your Identities</h2>
+        {/* Identities Card (Passport Style) */}
+        <section className="wood-card">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+            <Award color="var(--secondary)" size={22} />
+            <h2>My Identities</h2>
           </div>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            Cast votes for who you want to be. Each completed task or habit is a vote.
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "1.25rem" }}>
+            Reinforce your core beliefs. Track lifetime votes and current weekly momentum.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.5rem" }}>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {identities.map((identity) => (
               <div 
                 key={identity.name} 
                 style={{ 
                   display: "flex", 
-                  justifyContent: "space-between", 
-                  alignItems: "center",
-                  padding: "0.75rem 1rem",
-                  background: "rgba(255, 255, 255, 0.02)",
+                  flexDirection: "column",
+                  gap: "0.5rem",
+                  padding: "1rem",
+                  background: "var(--card-bg-hover)",
                   border: "1px solid var(--border-color)",
-                  borderRadius: "var(--radius-sm)"
+                  borderRadius: "var(--radius-sm)",
+                  boxShadow: "var(--shadow-inset)"
                 }}
               >
-                <span style={{ fontWeight: 600 }}>{identity.name}</span>
-                <span style={{ 
-                  fontSize: "0.8rem", 
-                  background: "var(--secondary-glow)", 
-                  color: "var(--secondary)", 
-                  padding: "0.25rem 0.6rem", 
-                  borderRadius: "12px",
-                  fontWeight: "bold"
-                }}>
-                  {identity.votes} Votes
-                </span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{identity.name}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>
+                      Level: {identity.level}
+                    </div>
+                  </div>
+                  <div style={{ 
+                    fontSize: "0.8rem", 
+                    background: "var(--bg-color)", 
+                    color: "var(--text-primary)", 
+                    padding: "0.25rem 0.5rem", 
+                    borderRadius: "4px",
+                    fontWeight: 700,
+                    border: "1px solid var(--border-color)"
+                  }}>
+                    {identity.votes} Votes
+                  </div>
+                </div>
+                
+                {/* Momentum Progress Bar */}
+                <div style={{ marginTop: "0.25rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                    <span>Weekly Momentum</span>
+                    <span style={{ fontWeight: 700, color: identity.accent }}>{identity.momentum}%</span>
+                  </div>
+                  <div style={{ 
+                    height: "6px", 
+                    background: "var(--bg-color)", 
+                    borderRadius: "3px", 
+                    overflow: "hidden", 
+                    marginTop: "0.25rem",
+                    border: "1px solid var(--border-color)"
+                  }}>
+                    <div style={{ 
+                      width: `${identity.momentum}%`, 
+                      height: "100%", 
+                      background: identity.accent,
+                      borderRadius: "3px" 
+                    }}></div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Untracked Temptation Bundles */}
-        <section className="glass-card glow-primary" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Compass color="var(--primary)" size={24} />
-            <h2>Temptation Playbook</h2>
+        {/* Temptation Playbook Card (Earthy Inset styling) */}
+        <section className="wood-card">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+            <Compass color="var(--primary)" size={22} />
+            <h2>Temptation Rules</h2>
           </div>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            Pair tasks you *need* to do with things you *want* to do. Untracked rules to avoid app fatigue.
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "1.25rem" }}>
+            Pair tasks you need to perform with things you want to enjoy. Untracked to minimize friction.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.5rem" }}>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {sampleRules.map((rule, idx) => (
               <div 
                 key={idx}
                 style={{ 
                   padding: "1rem",
-                  background: "rgba(255, 255, 255, 0.02)",
+                  background: "var(--card-bg-hover)",
                   border: "1px solid var(--border-color)",
                   borderRadius: "var(--radius-sm)",
-                  fontSize: "0.9rem"
+                  boxShadow: "var(--shadow-inset)"
                 }}
               >
-                <div style={{ color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 700, marginBottom: "0.25rem" }}>
+                <div style={{ 
+                  color: "var(--accent)", 
+                  fontSize: "0.7rem", 
+                  letterSpacing: "1px",
+                  textTransform: "uppercase", 
+                  fontWeight: 700, 
+                  marginBottom: "0.35rem" 
+                }}>
                   Rule #{idx + 1}
                 </div>
-                <div>
-                  I will <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{rule.need}</span>
+                <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                  I will <span style={{ color: "var(--text-primary)" }}>{rule.need}</span>
                 </div>
-                <div style={{ color: "var(--primary)", marginTop: "0.25rem", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                <div style={{ 
+                  color: "var(--primary)", 
+                  marginTop: "0.35rem", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "0.35rem",
+                  fontSize: "0.88rem",
+                  fontFamily: "var(--font-serif)",
+                  fontStyle: "italic"
+                }}>
                   <Sparkles size={12} /> while I {rule.want}
                 </div>
               </div>
@@ -162,41 +229,78 @@ function App() {
           </div>
         </section>
 
-        {/* Habits Checklist Preview */}
-        <section className="glass-card" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Habits Checklist Card */}
+        <section className="wood-card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <BookOpen color="var(--accent)" size={24} />
+              <BookOpen color="var(--accent)" size={22} />
               <h2>Daily Habits</h2>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "orange", fontSize: "0.95rem", fontWeight: "bold" }}>
-              <Flame size={16} /> 5 Day Streak
+            <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--accent)", fontSize: "0.88rem", fontWeight: 700 }}>
+              <Flame size={14} /> 5 Day Streak
             </div>
           </div>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            Simple Yes/No tracking. Keeping consistency obvious and friction-free.
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "1.25rem" }}>
+            Simple binary checkboxes. Stacked directly on top of existing daily routines.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.5rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 0" }}>
-              <CheckCircle2 size={20} color="var(--primary)" />
-              <div style={{ textDecoration: "line-through", color: "var(--text-muted)" }}>
-                Read 10 pages <span style={{ fontSize: "0.75rem", display: "block", color: "var(--text-muted)" }}>Stack: After morning coffee</span>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.75rem", 
+              padding: "0.75rem 1rem",
+              background: "var(--card-bg-hover)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "var(--radius-sm)",
+              boxShadow: "var(--shadow-inset)"
+            }}>
+              <CheckCircle2 size={18} color="var(--primary)" />
+              <div style={{ textDecoration: "line-through", color: "var(--text-muted)", fontSize: "0.95rem" }}>
+                Read 10 pages
+                <span style={{ fontSize: "0.75rem", display: "block", color: "var(--text-muted)", fontWeight: 500 }}>
+                  Stack cue: After morning coffee
+                </span>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 0" }}>
-              <span style={{ width: "20px", height: "20px", borderRadius: "50%", border: "2px solid var(--border-color)", display: "inline-block" }}></span>
-              <div>
-                Practice chords <span style={{ fontSize: "0.75rem", display: "block", color: "var(--text-secondary)" }}>Stack: After checking daily calendar</span>
+            
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.75rem", 
+              padding: "0.75rem 1rem",
+              background: "var(--card-bg)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "var(--radius-sm)",
+              boxShadow: "0 1px 2px rgba(44,37,35,0.03)"
+            }}>
+              <span style={{ 
+                width: "18px", 
+                height: "18px", 
+                borderRadius: "50%", 
+                border: "2.5px solid var(--border-color)", 
+                display: "inline-block" 
+              }}></span>
+              <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>
+                Practice chords
+                <span style={{ fontSize: "0.75rem", display: "block", color: "var(--text-secondary)", fontWeight: 500 }}>
+                  Stack cue: After checking calendar
+                </span>
               </div>
             </div>
           </div>
         </section>
       </div>
 
-      {/* Footer */}
-      <footer style={{ marginTop: "4rem", textAlign: "center", borderTop: "1px solid var(--border-color)", paddingTop: "1.5rem" }}>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-          Unluck App — Initial Local Setup. Connect your iOS app to Tailwind/Tailscale with API port 5001.
+      {/* Footer Desk Plate */}
+      <footer style={{ 
+        marginTop: "4.5rem", 
+        textAlign: "center", 
+        borderTop: "2px solid var(--border-color)", 
+        paddingTop: "1.5rem" 
+      }}>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", letterSpacing: "0.5px" }}>
+          Unluck — Visual Design: Cozy Wood-Framed Desktop Accessory theme. Co-developing with iOS client.
         </p>
       </footer>
     </div>
