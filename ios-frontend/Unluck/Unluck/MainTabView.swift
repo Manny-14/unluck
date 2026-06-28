@@ -4,11 +4,9 @@ struct MainTabView: View {
     @State private var healthMessage = "Checking server..."
     @State private var isConnected = false
     
-    // Preview states for UI interaction
-    @State private var habits = [
-        (id: 1, title: "Read 10 pages", cue: "After morning coffee", isCompleted: true),
-        (id: 2, title: "Practice chords", cue: "After checking calendar", isCompleted: false)
-    ]
+    // Dynamic states linked to the database via APIService
+    @State private var habits: [Habit] = []
+    @State private var identities: [Identity] = []
     @State private var tasks = [
         (id: 1, title: "Clean desk setup", reward: "Listen to music while cleaning", isCompleted: false)
     ]
@@ -45,7 +43,14 @@ struct MainTabView: View {
         .accentColor(Theme.forestGreen)
         .onAppear {
             checkBackendConnection()
+            fetchDashboard()
         }
+    }
+    
+    private func getLocalDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
     }
     
     private func checkBackendConnection() {
@@ -66,9 +71,72 @@ struct MainTabView: View {
         }
     }
     
+    private func fetchDashboard() {
+        Task {
+            do {
+                let dateStr = getLocalDateString()
+                let response = try await APIService.shared.fetchDashboard(date: dateStr)
+                await MainActor.run {
+                    self.habits = response.habits
+                    self.identities = response.identities
+                    self.isConnected = true
+                }
+            } catch {
+                print("DEBUG fetchDashboard Error: \(error)")
+                await MainActor.run {
+                    self.isConnected = false
+                }
+            }
+        }
+    }
+    
+    private func toggleHabit(id: String) {
+        // 1. Optimistic UI update
+        if let index = habits.firstIndex(where: { $0.id == id }) {
+            let wasCompleted = habits[index].isCompleted
+            habits[index].isCompleted.toggle()
+            habits[index].currentStreak = wasCompleted ? max(0, habits[index].currentStreak - 1) : habits[index].currentStreak + 1
+        }
+        
+        Task {
+            do {
+                let dateStr = getLocalDateString()
+                let response = try await APIService.shared.toggleHabit(id: id, date: dateStr)
+                
+                await MainActor.run {
+                    // Re-align with server truth
+                    if let index = habits.firstIndex(where: { $0.id == id }) {
+                        habits[index].isCompleted = response.isCompleted
+                        habits[index].currentStreak = response.currentStreak
+                    }
+                    
+                    // Update matching identity votes
+                    if let identityId = response.identityId,
+                       let index = identities.firstIndex(where: { $0.id == identityId }) {
+                        identities[index].votes = response.identityVotes
+                        
+                        let v = response.identityVotes
+                        var level = "Novice"
+                        if v >= 10 { level = "Expert" }
+                        else if v >= 5 { level = "Amateur" }
+                        else if v >= 2 { level = "Beginner" }
+                        identities[index].level = level
+                    }
+                }
+            } catch {
+                print("DEBUG toggleHabit Error: \(error)")
+                await MainActor.run {
+                    fetchDashboard() // Rollback on error
+                }
+            }
+        }
+    }
+    
     // MARK: - Today Tab View
     @ViewBuilder
     func TodayView() -> some View {
+        let maxStreak = habits.map { $0.currentStreak }.max() ?? 0
+        
         ZStack {
             Theme.ash.ignoresSafeArea()
             
@@ -101,7 +169,7 @@ struct MainTabView: View {
                         Circle()
                             .fill(isConnected ? Theme.forestGreen : .red)
                             .frame(width: 8, height: 8)
-                        Text(isConnected ? "Server connected" : "Server disconnected (emmanuels-laptop.tailb2dd90.ts.net)")
+                        Text(isConnected ? "Server connected" : "Server disconnected (Tailscale local server)")
                             .font(Theme.sansMedium(size: 11))
                             .foregroundColor(Theme.mutedText)
                     }
@@ -121,41 +189,51 @@ struct MainTabView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "flame.fill")
                                     .foregroundColor(Theme.terracotta)
-                                Text("5 Day Streak")
+                                Text("\(maxStreak) Day Streak")
                                     .font(Theme.sansBold(size: 12))
                                     .foregroundColor(Theme.espresso)
                             }
                         }
                         
-                        ForEach(0..<habits.count, id: \.self) { idx in
-                            HStack(alignment: .top, spacing: 12) {
-                                Button {
-                                    habits[idx].isCompleted.toggle()
-                                } label: {
-                                    Image(systemName: habits[idx].isCompleted ? "checkmark.circle.fill" : "circle")
-                                        .font(.title3)
-                                        .foregroundColor(habits[idx].isCompleted ? Theme.forestGreen : Theme.mutedText)
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(habits[idx].title)
-                                        .font(Theme.sansMedium(size: 16))
-                                        .strikethrough(habits[idx].isCompleted)
-                                        .foregroundColor(habits[idx].isCompleted ? Theme.mutedText : Theme.espresso)
+                        if habits.isEmpty {
+                            Text("Loading habits...")
+                                .font(Theme.sansMedium(size: 14))
+                                .foregroundColor(Theme.mutedText)
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        } else {
+                            ForEach(habits) { habit in
+                                HStack(alignment: .top, spacing: 12) {
+                                    Button {
+                                        toggleHabit(id: habit.id)
+                                    } label: {
+                                        Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
+                                            .font(.title3)
+                                            .foregroundColor(habit.isCompleted ? Theme.forestGreen : Theme.mutedText)
+                                    }
                                     
-                                    Text("Stack cue: \(habits[idx].cue)")
-                                        .font(Theme.sansRegular(size: 12))
-                                        .foregroundColor(Theme.mutedText)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(habit.title)
+                                            .font(Theme.sansMedium(size: 16))
+                                            .strikethrough(habit.isCompleted)
+                                            .foregroundColor(habit.isCompleted ? Theme.mutedText : Theme.espresso)
+                                        
+                                        if let desc = habit.description, !desc.isEmpty {
+                                            Text(desc)
+                                                .font(Theme.sansRegular(size: 12))
+                                                .foregroundColor(Theme.mutedText)
+                                        }
+                                    }
+                                    Spacer()
                                 }
-                                Spacer()
+                                .padding()
+                                .background(Theme.paper)
+                                .cornerRadius(Theme.radiusSm)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Theme.radiusSm)
+                                        .stroke(Theme.border, lineWidth: 1)
+                                )
                             }
-                            .padding()
-                            .background(Theme.paper)
-                            .cornerRadius(Theme.radiusSm)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Theme.radiusSm)
-                                    .stroke(Theme.border, lineWidth: 1)
-                            )
                         }
                     }
                     .padding(.horizontal)
@@ -203,7 +281,7 @@ struct MainTabView: View {
                             .overlay(
                                 RoundedRectangle(cornerRadius: Theme.radiusSm)
                                     .stroke(Theme.border, lineWidth: 1)
-                            )
+                             )
                         }
                     }
                     .padding(.horizontal)
@@ -236,9 +314,26 @@ struct MainTabView: View {
                         .padding(.top, 16)
                     
                     VStack(spacing: 16) {
-                        IdentityCard(name: "Consistent Athlete", votes: 24, level: "Amateur", momentum: 80, color: Theme.forestGreen)
-                        IdentityCard(name: "Focused Writer", votes: 12, level: "Novice", momentum: 45, color: Theme.slateBlue)
-                        IdentityCard(name: "Lifelong Learner", votes: 8, level: "Beginner", momentum: 20, color: Theme.terracotta)
+                        if identities.isEmpty {
+                            Text("Loading identities...")
+                                .font(Theme.sansMedium(size: 14))
+                                .foregroundColor(Theme.mutedText)
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        } else {
+                            ForEach(identities) { identity in
+                                let momentumPercent = min(100, Int(Double(identity.votes) / 10.0 * 100))
+                                let accentColor: Color = identity.name == "Musician" ? Theme.forestGreen : (identity.name == "Writer" ? Theme.slateBlue : Theme.terracotta)
+                                
+                                IdentityCard(
+                                    name: identity.name,
+                                    votes: identity.votes,
+                                    level: identity.level,
+                                    momentum: momentumPercent,
+                                    color: accentColor
+                                )
+                            }
+                        }
                     }
                     .padding(.horizontal)
                 }
