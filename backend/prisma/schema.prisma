@@ -46,8 +46,12 @@ model HabitLog {
   id          String   @id @default(uuid())
   habitId     String
   habit       Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  localDate   String   // Stored as "YYYY-MM-DD" representing the calendar day in user timezone
   completedAt DateTime @default(now())
+
+  @@unique([habitId, localDate])
 }
+
 
 model Task {
   id             String    @id @default(uuid())
