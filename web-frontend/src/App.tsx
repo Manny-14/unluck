@@ -7,31 +7,68 @@ interface HealthStatus {
   timestamp: string;
 }
 
+interface Habit {
+  id: string;
+  title: string;
+  description: string;
+  identityId: string | null;
+  isCompleted: boolean;
+  currentStreak: number;
+}
+
+interface Identity {
+  id: string;
+  name: string;
+  level: string;
+  votes: number;
+  accent: string;
+}
+
 function App() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [identities, setIdentities] = useState<Identity[]>([]);
 
-  // Sample data matching our detailed schema mechanics
-  const identities = [
-    { name: "Consistent Athlete", level: "Amateur", votes: 24, momentum: 80, accent: "var(--primary)" },
-    { name: "Focused Writer", level: "Novice", votes: 12, momentum: 45, accent: "var(--secondary)" },
-    { name: "Lifelong Learner", level: "Beginner", votes: 8, momentum: 20, accent: "var(--accent)" }
-  ];
-
+  // Simple static rules for temptation bundling (untracked)
   const sampleRules = [
-    { need: "Walk on the treadmill", want: "Watch my favorite TV series" },
-    { need: "Complete weekly planner", want: "Listen to new music releases" }
+    { need: "Practice guitar chords", want: "Watch my favorite TV series" },
+    { need: "Write 500 words", want: "Listen to new music releases" }
   ];
 
-  const checkBackend = async () => {
+  const getLocalDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const fetchDashboardData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:5001/api/health");
+      const localDate = getLocalDateString();
+      const res = await fetch(`http://localhost:5001/api/habits?date=${localDate}`);
       if (!res.ok) throw new Error("Backend offline");
       const data = await res.json();
-      setHealth(data);
+      
+      setHabits(data.habits);
+
+      // Distribute cozy design accents to dynamic backend identities
+      const accents = ["var(--primary)", "var(--secondary)", "var(--accent)"];
+      const mappedIdentities = data.identities.map((id: any, index: number) => ({
+        ...id,
+        accent: accents[index % accents.length]
+      }));
+      setIdentities(mappedIdentities);
+
+      setHealth({
+        status: "ok",
+        message: "Connected",
+        timestamp: new Date().toISOString()
+      });
     } catch (err) {
       console.error(err);
       setError("Unable to connect to local backend.");
@@ -40,9 +77,84 @@ function App() {
     }
   };
 
+  const toggleHabit = async (habitId: string) => {
+    const localDate = getLocalDateString();
+
+    // 1. Optimistic UI update for snappy feedback
+    setHabits((prev) =>
+      prev.map((h) => {
+        if (h.id === habitId) {
+          const nextCompleted = !h.isCompleted;
+          return {
+            ...h,
+            isCompleted: nextCompleted,
+            currentStreak: nextCompleted
+              ? h.currentStreak + 1
+              : Math.max(0, h.currentStreak - 1)
+          };
+        }
+        return h;
+      })
+    );
+
+    try {
+      const res = await fetch(`http://localhost:5001/api/habits/${habitId}/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: localDate })
+      });
+
+      if (!res.ok) throw new Error("Toggle API failed");
+      const result = await res.json(); // { habitId, isCompleted, currentStreak, identityId, identityVotes }
+
+      // 2. Re-update with backend calculations
+      setHabits((prev) =>
+        prev.map((h) => {
+          if (h.id === habitId) {
+            return {
+              ...h,
+              isCompleted: result.isCompleted,
+              currentStreak: result.currentStreak
+            };
+          }
+          return h;
+        })
+      );
+
+      // Update identity votes in UI dynamically
+      if (result.identityId) {
+        setIdentities((prev) =>
+          prev.map((id) => {
+            if (id.id === result.identityId) {
+              let level = "Novice";
+              const v = result.identityVotes;
+              if (v >= 10) level = "Expert";
+              else if (v >= 5) level = "Amateur";
+              else if (v >= 2) level = "Beginner";
+
+              return {
+                ...id,
+                votes: v,
+                level
+              };
+            }
+            return id;
+          })
+        );
+      }
+    } catch (err) {
+      console.error("Failed to toggle habit:", err);
+      // Revert state from server to resolve discrepancies
+      fetchDashboardData();
+    }
+  };
+
   useEffect(() => {
-    checkBackend();
+    fetchDashboardData();
   }, []);
+
+  // Compute maximum streak from active habits
+  const maxStreak = habits.reduce((max, h) => Math.max(max, h.currentStreak), 0);
 
   return (
     <div className="glass-container animate-fade-in" style={{ maxWidth: "1000px" }}>
@@ -78,7 +190,7 @@ function App() {
 
         {/* Server Status Badge */}
         <button 
-          onClick={checkBackend}
+          onClick={fetchDashboardData}
           className="btn btn-secondary"
           style={{ 
             display: "flex", 
@@ -97,7 +209,7 @@ function App() {
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--primary)" }}></span>
           )}
           <span style={{ fontWeight: 600 }}>
-            {loading ? "Checking..." : error ? "Server Offline" : `Server Connected (${health ? "Online" : "Unknown"})`}
+            {loading ? "Loading..." : error ? "Server Offline" : `Server Connected (${health ? "Online" : "Unknown"})`}
           </span>
         </button>
       </header>
@@ -112,68 +224,80 @@ function App() {
             <h2>My Identities</h2>
           </div>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "1.25rem" }}>
-            Reinforce your core beliefs. Track lifetime votes and current weekly momentum.
+            Reinforce your core beliefs. Track lifetime votes and level accomplishments.
           </p>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {identities.map((identity) => (
-              <div 
-                key={identity.name} 
-                style={{ 
-                  display: "flex", 
-                  flexDirection: "column",
-                  gap: "0.5rem",
-                  padding: "1rem",
-                  background: "var(--card-bg-hover)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "var(--radius-sm)",
-                  boxShadow: "var(--shadow-inset)"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{identity.name}</div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>
-                      Level: {identity.level}
+            {identities.length === 0 ? (
+              <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "1rem" }}>
+                No identities loaded.
+              </div>
+            ) : (
+              identities.map((identity) => {
+                // Compute visual momentum progress bar based on votes (capped at 100%)
+                const momentumPercent = Math.min(100, Math.round((identity.votes / 10) * 100));
+
+                return (
+                  <div 
+                    key={identity.id} 
+                    style={{ 
+                      display: "flex", 
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                      padding: "1rem",
+                      background: "var(--card-bg-hover)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "var(--radius-sm)",
+                      boxShadow: "var(--shadow-inset)"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{identity.name}</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>
+                          Level: {identity.level}
+                        </div>
+                      </div>
+                      <div style={{ 
+                        fontSize: "0.8rem", 
+                        background: "var(--bg-color)", 
+                        color: "var(--text-primary)", 
+                        padding: "0.25rem 0.5rem", 
+                        borderRadius: "4px",
+                        fontWeight: 700,
+                        border: "1px solid var(--border-color)"
+                      }}>
+                        {identity.votes} Votes
+                      </div>
+                    </div>
+                    
+                    {/* Momentum Progress Bar */}
+                    <div style={{ marginTop: "0.25rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                        <span>Progress to Mastery</span>
+                        <span style={{ fontWeight: 700, color: identity.accent }}>{momentumPercent}%</span>
+                      </div>
+                      <div style={{ 
+                        height: "6px", 
+                        background: "var(--bg-color)", 
+                        borderRadius: "3px", 
+                        overflow: "hidden", 
+                        marginTop: "0.25rem",
+                        border: "1px solid var(--border-color)"
+                      }}>
+                        <div style={{ 
+                          width: `${momentumPercent}%`, 
+                          height: "100%", 
+                          background: identity.accent,
+                          borderRadius: "3px",
+                          transition: "width 0.35s ease-out"
+                        }}></div>
+                      </div>
                     </div>
                   </div>
-                  <div style={{ 
-                    fontSize: "0.8rem", 
-                    background: "var(--bg-color)", 
-                    color: "var(--text-primary)", 
-                    padding: "0.25rem 0.5rem", 
-                    borderRadius: "4px",
-                    fontWeight: 700,
-                    border: "1px solid var(--border-color)"
-                  }}>
-                    {identity.votes} Votes
-                  </div>
-                </div>
-                
-                {/* Momentum Progress Bar */}
-                <div style={{ marginTop: "0.25rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                    <span>Weekly Momentum</span>
-                    <span style={{ fontWeight: 700, color: identity.accent }}>{identity.momentum}%</span>
-                  </div>
-                  <div style={{ 
-                    height: "6px", 
-                    background: "var(--bg-color)", 
-                    borderRadius: "3px", 
-                    overflow: "hidden", 
-                    marginTop: "0.25rem",
-                    border: "1px solid var(--border-color)"
-                  }}>
-                    <div style={{ 
-                      width: `${identity.momentum}%`, 
-                      height: "100%", 
-                      background: identity.accent,
-                      borderRadius: "3px" 
-                    }}></div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </section>
 
@@ -237,7 +361,7 @@ function App() {
               <h2>Daily Habits</h2>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--accent)", fontSize: "0.88rem", fontWeight: 700 }}>
-              <Flame size={14} /> 5 Day Streak
+              <Flame size={14} /> {maxStreak} Day Streak
             </div>
           </div>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "1.25rem" }}>
@@ -245,49 +369,61 @@ function App() {
           </p>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "0.75rem", 
-              padding: "0.75rem 1rem",
-              background: "var(--card-bg-hover)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "var(--radius-sm)",
-              boxShadow: "var(--shadow-inset)"
-            }}>
-              <CheckCircle2 size={18} color="var(--primary)" />
-              <div style={{ textDecoration: "line-through", color: "var(--text-muted)", fontSize: "0.95rem" }}>
-                Read 10 pages
-                <span style={{ fontSize: "0.75rem", display: "block", color: "var(--text-muted)", fontWeight: 500 }}>
-                  Stack cue: After morning coffee
-                </span>
+            {habits.length === 0 ? (
+              <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "1rem" }}>
+                No habits loaded.
               </div>
-            </div>
-            
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "0.75rem", 
-              padding: "0.75rem 1rem",
-              background: "var(--card-bg)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "var(--radius-sm)",
-              boxShadow: "0 1px 2px rgba(44,37,35,0.03)"
-            }}>
-              <span style={{ 
-                width: "18px", 
-                height: "18px", 
-                borderRadius: "50%", 
-                border: "2.5px solid var(--border-color)", 
-                display: "inline-block" 
-              }}></span>
-              <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>
-                Practice chords
-                <span style={{ fontSize: "0.75rem", display: "block", color: "var(--text-secondary)", fontWeight: 500 }}>
-                  Stack cue: After checking calendar
-                </span>
-              </div>
-            </div>
+            ) : (
+              habits.map((habit) => (
+                <div 
+                  key={habit.id}
+                  onClick={() => toggleHabit(habit.id)}
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "0.75rem", 
+                    padding: "0.75rem 1rem",
+                    background: habit.isCompleted ? "var(--card-bg-hover)" : "var(--card-bg)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "var(--radius-sm)",
+                    boxShadow: habit.isCompleted ? "var(--shadow-inset)" : "0 1px 2px rgba(44,37,35,0.03)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  {habit.isCompleted ? (
+                    <CheckCircle2 size={18} color="var(--primary)" />
+                  ) : (
+                    <span style={{ 
+                      width: "18px", 
+                      height: "18px", 
+                      borderRadius: "50%", 
+                      border: "2.5px solid var(--border-color)", 
+                      display: "inline-block",
+                      flexShrink: 0
+                    }}></span>
+                  )}
+                  <div style={{ 
+                    textDecoration: habit.isCompleted ? "line-through" : "none", 
+                    color: habit.isCompleted ? "var(--text-muted)" : "var(--text-primary)", 
+                    fontSize: "0.95rem",
+                    fontWeight: habit.isCompleted ? 500 : 600
+                  }}>
+                    {habit.title}
+                    {habit.description && (
+                      <span style={{ 
+                        fontSize: "0.75rem", 
+                        display: "block", 
+                        color: habit.isCompleted ? "var(--text-muted)" : "var(--text-secondary)", 
+                        fontWeight: 500 
+                      }}>
+                        {habit.description}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </div>
