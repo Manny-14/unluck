@@ -7,5 +7,5 @@ dist/
 product_concept.md
 *.xcuserstate
 xcuserdata/
-
-
+*.db
+*.db-journal
