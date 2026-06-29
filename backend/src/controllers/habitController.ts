@@ -1,14 +1,9 @@
 import { Request, Response } from "express";
 import * as habitService from "../services/habitService";
 
-export async function healthCheckHandler(req: Request, res: Response) {
-  return res.json({
-    status: "ok",
-    message: "Unluck Backend API is running successfully.",
-    timestamp: new Date().toISOString(),
-  });
-}
-
+/**
+ * Handles GET /api/habits: Parses client date query parameter and returns dashboard data.
+ */
 export async function getHabitsHandler(req: Request, res: Response) {
   try {
     const { date } = req.query;
@@ -24,6 +19,9 @@ export async function getHabitsHandler(req: Request, res: Response) {
   }
 }
 
+/**
+ * Handles POST /api/habits/:id/toggle: Validates body and toggles completion of a habit.
+ */
 export async function toggleHabitHandler(req: Request, res: Response) {
   try {
     const { id } = req.params;

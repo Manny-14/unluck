@@ -12,7 +12,16 @@ const port = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 
-// Mount API routes
+// API Infrastructure endpoint check
+app.get("/api/health", (req, res) => {
+  return res.json({
+    status: "ok",
+    message: "Unluck Backend API is running successfully.",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Domain Routes
 app.use("/api", habitRouter);
 
 if (process.env.NODE_ENV !== "test") {

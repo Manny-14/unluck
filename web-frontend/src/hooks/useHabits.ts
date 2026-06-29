@@ -23,6 +23,9 @@ export interface Identity {
   accent: string;
 }
 
+/**
+ * React hook encapsulating state updates, optimistic UI toggles, and backend syncing.
+ */
 export function useHabits() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +33,9 @@ export function useHabits() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [identities, setIdentities] = useState<Identity[]>([]);
 
+  /**
+   * Helper function returning the client's current date formatted as YYYY-MM-DD.
+   */
   const getLocalDateString = () => {
     const d = new Date();
     const year = d.getFullYear();
@@ -38,6 +44,9 @@ export function useHabits() {
     return `${year}-${month}-${day}`;
   };
 
+  /**
+   * Loads habit checklist and identity votes from API.
+   */
   const fetchDashboardData = async () => {
     setLoading(true);
     setError(null);
@@ -70,6 +79,9 @@ export function useHabits() {
     }
   };
 
+  /**
+   * Toggles habit completion, performs optimistic UI update, and resolves results on server callback.
+   */
   const toggleHabit = async (habitId: string) => {
     const localDate = getLocalDateString();
 

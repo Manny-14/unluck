@@ -1,7 +1,9 @@
 import { prisma } from "../prisma";
 import { calculateCurrentStreak } from "../streak";
 
-// Helper to seed database if empty
+/**
+ * Seeds a default user, identities, and habits if the database has no records.
+ */
 export async function seedIfNeeded(): Promise<void> {
   const userCount = await prisma.user.count();
   if (userCount > 0) return;
@@ -69,6 +71,9 @@ export interface DashboardData {
   }>;
 }
 
+/**
+ * Fetches active habits, completes log flags, calculates streaks, and returns dashboard details.
+ */
 export async function getDashboardData(date: string): Promise<DashboardData> {
   // Ensure database has default data
   await seedIfNeeded();
@@ -145,6 +150,9 @@ export interface ToggleResponse {
   identityVotes: number;
 }
 
+/**
+ * Toggles completion status (checks/unchecks log) for a specific local date and updates votes.
+ */
 export async function toggleHabit(habitId: string, date: string): Promise<ToggleResponse> {
   const habit = await prisma.habit.findUnique({
     where: { id: habitId },

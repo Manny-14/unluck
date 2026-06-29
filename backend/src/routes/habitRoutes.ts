@@ -1,13 +1,12 @@
 import { Router } from "express";
 import {
-  healthCheckHandler,
   getHabitsHandler,
   toggleHabitHandler,
 } from "../controllers/habitController";
 
 const router = Router();
 
-router.get("/health", healthCheckHandler);
+// Routes mapped to habit controller actions
 router.get("/habits", getHabitsHandler);
 router.post("/habits/:id/toggle", toggleHabitHandler);
 

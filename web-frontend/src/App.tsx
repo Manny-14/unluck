@@ -1,6 +1,9 @@
 import { CheckCircle2, Flame, Award, Compass, Sparkles, BookOpen, AlertCircle, RefreshCw } from "lucide-react";
 import { useHabits } from "./hooks/useHabits";
 
+/**
+ * Root Component rendering the dashboard UI layout.
+ */
 function App() {
   const {
     health,
