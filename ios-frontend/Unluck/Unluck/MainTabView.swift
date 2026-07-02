@@ -1,18 +1,7 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @State private var healthMessage = "Checking server..."
-    @State private var isConnected = false
-    
-    // Dynamic states linked to the database via APIService
-    @State private var habits: [Habit] = []
-    @State private var identities: [Identity] = []
-    @State private var tasks = [
-        (id: 1, title: "Clean desk setup", reward: "Listen to music while cleaning", isCompleted: false)
-    ]
-    
-    @State private var showCuePopup = false
-    @State private var pendingCueHabit = ""
+    @StateObject private var viewModel = DashboardViewModel()
 
     var body: some View {
         TabView {
@@ -42,100 +31,15 @@ struct MainTabView: View {
         }
         .accentColor(Theme.forestGreen)
         .onAppear {
-            checkBackendConnection()
-            fetchDashboard()
-        }
-    }
-    
-    private func getLocalDateString() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
-    }
-    
-    private func checkBackendConnection() {
-        Task {
-            do {
-                let health = try await APIService.shared.fetchHealthStatus()
-                await MainActor.run {
-                    self.healthMessage = health.message
-                    self.isConnected = true
-                }
-            } catch {
-                print("DEBUG APIService Connection Error: \(error)")
-                await MainActor.run {
-                    self.healthMessage = "Offline"
-                    self.isConnected = false
-                }
-            }
-        }
-    }
-    
-    private func fetchDashboard() {
-        Task {
-            do {
-                let dateStr = getLocalDateString()
-                let response = try await APIService.shared.fetchDashboard(date: dateStr)
-                await MainActor.run {
-                    self.habits = response.habits
-                    self.identities = response.identities
-                    self.isConnected = true
-                }
-            } catch {
-                print("DEBUG fetchDashboard Error: \(error)")
-                await MainActor.run {
-                    self.isConnected = false
-                }
-            }
-        }
-    }
-    
-    private func toggleHabit(id: String) {
-        // 1. Optimistic UI update
-        if let index = habits.firstIndex(where: { $0.id == id }) {
-            let wasCompleted = habits[index].isCompleted
-            habits[index].isCompleted.toggle()
-            habits[index].currentStreak = wasCompleted ? max(0, habits[index].currentStreak - 1) : habits[index].currentStreak + 1
-        }
-        
-        Task {
-            do {
-                let dateStr = getLocalDateString()
-                let response = try await APIService.shared.toggleHabit(id: id, date: dateStr)
-                
-                await MainActor.run {
-                    // Re-align with server truth
-                    if let index = habits.firstIndex(where: { $0.id == id }) {
-                        habits[index].isCompleted = response.isCompleted
-                        habits[index].currentStreak = response.currentStreak
-                    }
-                    
-                    // Update matching identity votes
-                    if let identityId = response.identityId,
-                       let index = identities.firstIndex(where: { $0.id == identityId }) {
-                        identities[index].votes = response.identityVotes
-                        
-                        let v = response.identityVotes
-                        var level = "Novice"
-                        if v >= 10 { level = "Expert" }
-                        else if v >= 5 { level = "Amateur" }
-                        else if v >= 2 { level = "Beginner" }
-                        identities[index].level = level
-                    }
-                }
-            } catch {
-                print("DEBUG toggleHabit Error: \(error)")
-                await MainActor.run {
-                    fetchDashboard() // Rollback on error
-                }
-            }
+            viewModel.checkBackendConnection()
+            viewModel.fetchDashboard()
         }
     }
     
     // MARK: - Today Tab View
     @ViewBuilder
     func TodayView() -> some View {
-        let maxStreak = habits.map { $0.currentStreak }.max() ?? 0
+        let maxStreak = viewModel.habits.map { $0.currentStreak }.max() ?? 0
         
         ZStack {
             Theme.ash.ignoresSafeArea()
@@ -167,9 +71,9 @@ struct MainTabView: View {
                     // Server status badge
                     HStack(spacing: 8) {
                         Circle()
-                            .fill(isConnected ? Theme.forestGreen : .red)
+                            .fill(viewModel.isConnected ? Theme.forestGreen : .red)
                             .frame(width: 8, height: 8)
-                        Text(isConnected ? "Server connected" : "Server disconnected (Tailscale local server)")
+                        Text(viewModel.isConnected ? "Server connected" : "Server disconnected (Tailscale local server)")
                             .font(Theme.sansMedium(size: 11))
                             .foregroundColor(Theme.mutedText)
                     }
@@ -195,17 +99,17 @@ struct MainTabView: View {
                             }
                         }
                         
-                        if habits.isEmpty {
+                        if viewModel.habits.isEmpty {
                             Text("Loading habits...")
                                 .font(Theme.sansMedium(size: 14))
                                 .foregroundColor(Theme.mutedText)
                                 .padding()
                                 .frame(maxWidth: .infinity, alignment: .center)
                         } else {
-                            ForEach(habits) { habit in
+                            ForEach(viewModel.habits) { habit in
                                 HStack(alignment: .top, spacing: 12) {
                                     Button {
-                                        toggleHabit(id: habit.id)
+                                        viewModel.toggleHabit(id: habit.id)
                                     } label: {
                                         Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
                                             .font(.title3)
@@ -244,30 +148,26 @@ struct MainTabView: View {
                             .font(Theme.editorialHeader(size: 20))
                             .foregroundColor(Theme.espresso)
                         
-                        ForEach(0..<tasks.count, id: \.self) { idx in
+                        ForEach(viewModel.tasks) { task in
                             HStack(alignment: .top, spacing: 12) {
                                 Button {
-                                    tasks[idx].isCompleted.toggle()
-                                    if tasks[idx].isCompleted {
-                                        pendingCueHabit = "Practice chords"
-                                        showCuePopup = true
-                                    }
+                                    viewModel.toggleTask(id: task.id)
                                 } label: {
-                                    Image(systemName: tasks[idx].isCompleted ? "checkmark.square.fill" : "square")
+                                    Image(systemName: task.isCompleted ? "checkmark.square.fill" : "square")
                                         .font(.title3)
-                                        .foregroundColor(tasks[idx].isCompleted ? Theme.slateBlue : Theme.mutedText)
+                                        .foregroundColor(task.isCompleted ? Theme.slateBlue : Theme.mutedText)
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(tasks[idx].title)
+                                    Text(task.title)
                                         .font(Theme.sansMedium(size: 16))
-                                        .strikethrough(tasks[idx].isCompleted)
-                                        .foregroundColor(tasks[idx].isCompleted ? Theme.mutedText : Theme.espresso)
+                                        .strikethrough(task.isCompleted)
+                                        .foregroundColor(task.isCompleted ? Theme.mutedText : Theme.espresso)
                                     
                                     HStack(spacing: 4) {
                                         Image(systemName: "sparkles")
                                             .foregroundColor(Theme.terracotta)
-                                        Text(tasks[idx].reward)
+                                        Text(task.reward)
                                             .font(Theme.sansRegular(size: 12))
                                             .foregroundColor(Theme.mutedText)
                                     }
@@ -289,13 +189,13 @@ struct MainTabView: View {
                 .padding(.bottom, 32)
             }
         }
-        .alert("Habit Stack Cue Triggered!", isPresented: $showCuePopup) {
+        .alert("Habit Stack Cue Triggered!", isPresented: $viewModel.showCuePopup) {
             Button("I'll do it now", role: .none) {
                 // stack transition
             }
             Button("Later", role: .cancel) {}
         } message: {
-            Text("You completed your task. Now stack the habit: '\(pendingCueHabit)'!")
+            Text("You completed your task. Now stack the habit: '\(viewModel.pendingCueHabit)'!")
         }
     }
     
@@ -314,14 +214,14 @@ struct MainTabView: View {
                         .padding(.top, 16)
                     
                     VStack(spacing: 16) {
-                        if identities.isEmpty {
+                        if viewModel.identities.isEmpty {
                             Text("Loading identities...")
                                 .font(Theme.sansMedium(size: 14))
                                 .foregroundColor(Theme.mutedText)
                                 .padding()
                                 .frame(maxWidth: .infinity, alignment: .center)
                         } else {
-                            ForEach(identities) { identity in
+                            ForEach(viewModel.identities) { identity in
                                 let momentumPercent = min(100, Int(Double(identity.votes) / 10.0 * 100))
                                 let accentColor: Color = identity.name == "Musician" ? Theme.forestGreen : (identity.name == "Writer" ? Theme.slateBlue : Theme.terracotta)
                                 

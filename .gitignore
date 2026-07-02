@@ -9,3 +9,5 @@ product_concept.md
 xcuserdata/
 *.db
 *.db-journal
+*Secrets.plist
+*Config.plist

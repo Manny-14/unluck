@@ -9,8 +9,14 @@ struct HealthStatus: Codable {
 class APIService {
     static let shared = APIService()
     
-    // Configured base URL for local server over Tailscale
-    private let baseURLString = "http://emmanuels-laptop.tailb2dd90.ts.net:5001/api"
+    private let baseURLString: String = {
+        if let path = Bundle.main.path(forResource: "Secrets", ofType: "plist"),
+           let dict = NSDictionary(contentsOfFile: path),
+           let url = dict["BaseURL"] as? String {
+            return url
+        }
+        return "http://localhost:5001/api"
+    }()
     
     private init() {}
     
