@@ -1,4 +1,5 @@
 import Foundation
+import ClerkKit
 
 struct HealthStatus: Codable {
     let status: String
@@ -20,6 +21,17 @@ class APIService {
     
     private init() {}
     
+    private func attachAuthToken(to request: inout URLRequest) async throws {
+        // Clerk.shared.session is likely bound to @MainActor, requiring `await` to access from APIService
+        if let session = await Clerk.shared.session {
+            // session.getToken() returns a String directly
+            let token = try await session.getToken()
+            if let tokenString = token as? String {
+                request.setValue("Bearer \(tokenString)", forHTTPHeaderField: "Authorization")
+            }
+        }
+    }
+    
     /// Queries the backend API health status endpoint
     func fetchHealthStatus() async throws -> HealthStatus {
         guard let url = URL(string: "\(baseURLString)/health") else {
@@ -29,6 +41,9 @@ class APIService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 10.0
+        
+        // Health endpoint doesn't strictly need auth, but good practice
+        try await attachAuthToken(to: &request)
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -49,6 +64,8 @@ class APIService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 10.0
+        
+        try await attachAuthToken(to: &request)
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -73,6 +90,8 @@ class APIService {
         
         let body: [String: String] = ["date": date]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        try await attachAuthToken(to: &request)
         
         let (data, response) = try await URLSession.shared.data(for: request)
         

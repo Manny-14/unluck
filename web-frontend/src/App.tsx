@@ -1,10 +1,14 @@
 import { CheckCircle2, Flame, Award, Compass, Sparkles, BookOpen, AlertCircle, RefreshCw } from "lucide-react";
 import { useHabits } from "./hooks/useHabits";
+import { UserButton, useAuth } from "@clerk/react";
+import { AuthScreen } from "./components/AuthScreen";
 
 /**
  * Root Component rendering the dashboard UI layout.
  */
 function App() {
+  const { isLoaded, isSignedIn } = useAuth();
+  
   const {
     health,
     loading,
@@ -21,6 +25,14 @@ function App() {
     { need: "Practice guitar chords", want: "Watch my favorite TV series" },
     { need: "Write 500 words", want: "Listen to new music releases" }
   ];
+
+  if (!isLoaded) {
+    return null; // Or a loading spinner
+  }
+
+  if (!isSignedIn) {
+    return <AuthScreen />;
+  }
 
   return (
     <div className="glass-container animate-fade-in" style={{ maxWidth: "1000px" }}>
@@ -54,30 +66,34 @@ function App() {
           </p>
         </div>
 
-        {/* Server Status Badge */}
-        <button 
-          onClick={fetchDashboardData}
-          className="btn btn-secondary"
-          style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: "0.5rem", 
-            borderRadius: "var(--radius-sm)", 
-            padding: "0.5rem 0.75rem",
-            fontSize: "0.8rem"
-          }}
-        >
-          {loading ? (
-            <RefreshCw size={12} className="spin" style={{ animation: "spin 2s linear infinite" }} />
-          ) : error ? (
-            <AlertCircle size={12} color="coral" />
-          ) : (
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--primary)" }}></span>
-          )}
-          <span style={{ fontWeight: 600 }}>
-            {loading ? "Loading..." : error ? "Server Offline" : `Server Connected (${health ? "Online" : "Unknown"})`}
-          </span>
-        </button>
+        {/* Server Status Badge & Profile */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          <button 
+            onClick={fetchDashboardData}
+            className="btn btn-secondary"
+            style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.5rem", 
+              borderRadius: "var(--radius-sm)", 
+              padding: "0.5rem 0.75rem",
+              fontSize: "0.8rem"
+            }}
+          >
+            {loading ? (
+              <RefreshCw size={12} className="spin" style={{ animation: "spin 2s linear infinite" }} />
+            ) : error ? (
+              <AlertCircle size={12} color="coral" />
+            ) : (
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--primary)" }}></span>
+            )}
+            <span style={{ fontWeight: 600 }}>
+              {loading ? "Loading..." : error ? "Server Offline" : `Connected (${health?.status || "Unknown"})`}
+            </span>
+          </button>
+          
+          <UserButton />
+        </div>
       </header>
 
       {/* Main Grid: Structural wood dividers and bevel blocks */}

@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@clerk/express": "^2.1.35",
     "@prisma/client": "^5.15.0",
     "cors": "^2.8.5",
     "date-fns": "^4.4.0",

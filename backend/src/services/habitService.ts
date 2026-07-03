@@ -2,32 +2,20 @@ import { prisma } from "../prisma";
 import { calculateCurrentStreak } from "../streak";
 
 /**
- * Seeds a default user, identities, and habits if the database has no records.
+ * Seeds default identities and habits for a new user if they have none.
  */
-export async function seedIfNeeded(): Promise<void> {
-  const userCount = await prisma.user.count();
-  if (userCount > 0) return;
+async function seedUserIfNeeded(userId: string): Promise<void> {
+  const habitCount = await prisma.habit.count({ where: { userId } });
+  if (habitCount > 0) return;
 
-  console.log("[db]: Database is empty. Seeding default data...");
-  const user = await prisma.user.create({
-    data: {
-      email: "emmanuel@example.com",
-      name: "Emmanuel",
-    },
-  });
-
+  console.log(`[db]: User ${userId} has no habits. Seeding default data...`);
+  
   const musician = await prisma.identity.create({
-    data: {
-      name: "Musician",
-      userId: user.id,
-    },
+    data: { name: "Musician", userId: userId },
   });
 
   const writer = await prisma.identity.create({
-    data: {
-      name: "Writer",
-      userId: user.id,
-    },
+    data: { name: "Writer", userId: userId },
   });
 
   await prisma.habit.createMany({
@@ -35,23 +23,22 @@ export async function seedIfNeeded(): Promise<void> {
       {
         title: "Practice guitar chords",
         description: "15 minutes after morning tea",
-        userId: user.id,
+        userId: userId,
         identityId: musician.id,
       },
       {
         title: "Write 500 words",
         description: "Drafting next article in the morning",
-        userId: user.id,
+        userId: userId,
         identityId: writer.id,
       },
       {
         title: "Drink 3L of water",
         description: "Keep a water bottle on the desk",
-        userId: user.id,
+        userId: userId,
       },
     ],
   });
-  console.log("[db]: Seeding completed successfully.");
 }
 
 export interface DashboardData {
@@ -71,25 +58,12 @@ export interface DashboardData {
   }>;
 }
 
-/**
- * Fetches active habits, completes log flags, calculates streaks, and returns dashboard details.
- */
-export async function getDashboardData(date: string): Promise<DashboardData> {
-  // Ensure database has default data
-  await seedIfNeeded();
+export async function getDashboardData(userId: string, date: string): Promise<DashboardData> {
+  await seedUserIfNeeded(userId);
 
-  // Get the default user (first user)
-  const user = await prisma.user.findFirst();
-  if (!user) {
-    throw new Error("No user found in the database.");
-  }
-
-  // Fetch habits with their logs
   const habits = await prisma.habit.findMany({
-    where: { userId: user.id, isArchived: false },
-    include: {
-      logs: true,
-    },
+    where: { userId, isArchived: false },
+    include: { logs: true },
   });
 
   const habitsResponse = habits.map((habit) => {
@@ -106,9 +80,8 @@ export async function getDashboardData(date: string): Promise<DashboardData> {
     };
   });
 
-  // Fetch user's identities and compute votes & level
   const userIdentities = await prisma.identity.findMany({
-    where: { userId: user.id },
+    where: { userId },
   });
 
   const identitiesWithVotes = await Promise.all(
@@ -150,31 +123,25 @@ export interface ToggleResponse {
   identityVotes: number;
 }
 
-/**
- * Toggles completion status (checks/unchecks log) for a specific local date and updates votes.
- */
-export async function toggleHabit(habitId: string, date: string): Promise<ToggleResponse> {
+export async function toggleHabit(userId: string, habitId: string, date: string): Promise<ToggleResponse> {
   const habit = await prisma.habit.findUnique({
     where: { id: habitId },
     include: { logs: true },
   });
 
-  if (!habit) {
+  if (!habit || habit.userId !== userId) {
     throw new Error("Habit not found");
   }
 
-  // Check if a log already exists for this habit on this local date
   const existingLog = habit.logs.find((log) => log.localDate === date);
   let isCompleted = false;
 
   if (existingLog) {
-    // Uncheck it: delete the log
     await prisma.habitLog.delete({
       where: { id: existingLog.id },
     });
     isCompleted = false;
   } else {
-    // Check it: create a new log
     await prisma.habitLog.create({
       data: {
         habitId: habitId,
@@ -184,13 +151,11 @@ export async function toggleHabit(habitId: string, date: string): Promise<Toggle
     isCompleted = true;
   }
 
-  // Re-fetch all logs to calculate the updated streak
   const updatedLogs = await prisma.habitLog.findMany({
     where: { habitId: habitId },
   });
   const currentStreak = calculateCurrentStreak(updatedLogs, date);
 
-  // If this habit is linked to an identity, count the total votes (all logs for all habits under this identity)
   let identityVotes = 0;
   if (habit.identityId) {
     const identityHabits = await prisma.habit.findMany({

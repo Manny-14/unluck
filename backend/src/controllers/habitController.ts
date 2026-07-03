@@ -1,9 +1,6 @@
 import { Request, Response } from "express";
 import * as habitService from "../services/habitService";
 
-/**
- * Handles GET /api/habits: Parses client date query parameter and returns dashboard data.
- */
 export async function getHabitsHandler(req: Request, res: Response) {
   try {
     const { date } = req.query;
@@ -11,7 +8,9 @@ export async function getHabitsHandler(req: Request, res: Response) {
       return res.status(400).json({ error: "Missing required query parameter: date (YYYY-MM-DD)" });
     }
 
-    const data = await habitService.getDashboardData(date);
+    // @ts-ignore
+    const userId = req.dbUser.id;
+    const data = await habitService.getDashboardData(userId, date);
     return res.json(data);
   } catch (error: any) {
     console.error("Error fetching habits:", error);
@@ -19,9 +18,6 @@ export async function getHabitsHandler(req: Request, res: Response) {
   }
 }
 
-/**
- * Handles POST /api/habits/:id/toggle: Validates body and toggles completion of a habit.
- */
 export async function toggleHabitHandler(req: Request, res: Response) {
   try {
     const { id } = req.params;
@@ -31,7 +27,9 @@ export async function toggleHabitHandler(req: Request, res: Response) {
       return res.status(400).json({ error: "Missing required body parameter: date (YYYY-MM-DD)" });
     }
 
-    const result = await habitService.toggleHabit(id, date);
+    // @ts-ignore
+    const userId = req.dbUser.id;
+    const result = await habitService.toggleHabit(userId, id, date);
     return res.json(result);
   } catch (error: any) {
     console.error("Error toggling habit:", error);

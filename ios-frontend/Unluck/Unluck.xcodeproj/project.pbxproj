@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		147CA07F2FF76B3A00F258F6 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 147CA07E2FF76B3A00F258F6 /* ClerkKit */; };
+		147CA0812FF76B3A00F258F6 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 147CA0802FF76B3A00F258F6 /* ClerkKitUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		143E00CD2FE86992000DA73D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +70,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				147CA07F2FF76B3A00F258F6 /* ClerkKit in Frameworks */,
+				147CA0812FF76B3A00F258F6 /* ClerkKitUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,6 +98,7 @@
 				143E00C12FE86991000DA73D /* Unluck */,
 				143E00CF2FE86992000DA73D /* UnluckTests */,
 				143E00D92FE86993000DA73D /* UnluckUITests */,
+				14A6825E2FF7669400D9826C /* Frameworks */,
 				143E00C02FE86991000DA73D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -103,6 +111,13 @@
 				143E00D62FE86993000DA73D /* UnluckUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		14A6825E2FF7669400D9826C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -125,6 +140,8 @@
 			);
 			name = Unluck;
 			packageProductDependencies = (
+				147CA07E2FF76B3A00F258F6 /* ClerkKit */,
+				147CA0802FF76B3A00F258F6 /* ClerkKitUI */,
 			);
 			productName = Unluck;
 			productReference = 143E00BF2FE86991000DA73D /* Unluck.app */;
@@ -208,6 +225,9 @@
 			);
 			mainGroup = 143E00B62FE86990000DA73D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				14A6825B2FF7620F00D9826C /* XCRemoteSwiftPackageReference "clerk-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 143E00C02FE86991000DA73D /* Products */;
 			projectDirPath = "";
@@ -565,6 +585,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		14A6825B2FF7620F00D9826C /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/clerk/clerk-ios";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 1.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		147CA07E2FF76B3A00F258F6 /* ClerkKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14A6825B2FF7620F00D9826C /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = ClerkKit;
+		};
+		147CA0802FF76B3A00F258F6 /* ClerkKitUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14A6825B2FF7620F00D9826C /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = ClerkKitUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 143E00B72FE86990000DA73D /* Project object */;
 }

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@clerk/react";
 
 export interface HealthStatus {
   status: string;
@@ -27,6 +28,7 @@ export interface Identity {
  * React hook encapsulating state updates, optimistic UI toggles, and backend syncing.
  */
 export function useHabits() {
+  const { getToken } = useAuth();
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +49,20 @@ export function useHabits() {
   /**
    * Loads habit checklist and identity votes from API.
    */
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const localDate = getLocalDateString();
-      const res = await fetch(`http://localhost:5001/api/habits?date=${localDate}`);
-      if (!res.ok) throw new Error("Backend offline");
+      const token = await getToken();
+      
+      const res = await fetch(`http://localhost:5001/api/habits?date=${localDate}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) throw new Error("Backend offline or Unauthorized");
       const data = await res.json();
       
       setHabits(data.habits);
@@ -77,7 +86,7 @@ export function useHabits() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken]);
 
   /**
    * Toggles habit completion, performs optimistic UI update, and resolves results on server callback.
@@ -103,9 +112,13 @@ export function useHabits() {
     );
 
     try {
+      const token = await getToken();
       const res = await fetch(`http://localhost:5001/api/habits/${habitId}/toggle`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ date: localDate })
       });
 
@@ -156,7 +169,7 @@ export function useHabits() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [fetchDashboardData]);
 
   // Compute maximum streak from active habits
   const maxStreak = habits.reduce((max, h) => Math.max(max, h.currentStreak), 0);
