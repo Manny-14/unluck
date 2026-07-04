@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { prisma } from "./prisma";
 import habitRouter from "./routes/habitRoutes";
+import taskRouter from "./routes/taskRoutes";
+import identityRouter from "./routes/identityRoutes";
 import { clerkMiddleware } from '@clerk/express';
 import { syncUser } from './middleware/syncUser';
 
@@ -25,7 +27,9 @@ app.get("/api/health", (req, res) => {
 });
 
 // Domain Routes (Protected by Clerk and Synced to local DB)
-app.use("/api", syncUser, habitRouter);
+app.use("/api/habits", syncUser, habitRouter);
+app.use("/api/tasks", syncUser, taskRouter);
+app.use("/api/identities", syncUser, identityRouter);
 
 if (process.env.NODE_ENV !== "test") {
   app.listen(Number(port), "0.0.0.0", () => {

@@ -5,6 +5,7 @@ dist/
 .env*
 !.env.example
 product_concept.md
+feature_backlog.md
 *.xcuserstate
 xcuserdata/
 *.db
