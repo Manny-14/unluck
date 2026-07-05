@@ -1,7 +1,16 @@
 import { Router } from "express";
+import {
+  getHabitsHandler,
+  createHabitHandler,
+  updateHabitHandler,
+  deleteHabitHandler
+} from "../controllers/habitController";
 
 const router = Router();
 
-// Habit CRUD operations will go here in Commit 3
+router.get("/", getHabitsHandler);
+router.post("/", createHabitHandler);
+router.put("/:id", updateHabitHandler);
+router.delete("/:id", deleteHabitHandler);
 
 export default router;

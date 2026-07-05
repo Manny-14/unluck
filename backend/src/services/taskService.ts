@@ -144,3 +144,45 @@ export async function toggleTask(userId: string, taskId: string) {
   return updatedTask;
 }
 
+/**
+ * Creates a standalone, one-off task not linked to any habit.
+ */
+export async function createTask(userId: string, data: any) {
+  return await prisma.task.create({
+    data: {
+      userId,
+      ...data,
+      // Default to end of day if no specific dueDate is provided, but allow overrides
+    },
+  });
+}
+
+/**
+ * Updates a specific task instance (granular edit). This allows a user to 
+ * change the time/location/temptation of today's task without modifying the parent Habit blueprint.
+ */
+export async function updateTask(userId: string, taskId: string, data: any) {
+  const existing = await prisma.task.findUnique({ where: { id: taskId } });
+  if (!existing || existing.userId !== userId) {
+    throw new Error("Task not found");
+  }
+
+  return await prisma.task.update({
+    where: { id: taskId },
+    data,
+  });
+}
+
+/**
+ * Deletes a specific task instance (e.g. if the user wants to remove a rolled-over task).
+ */
+export async function deleteTask(userId: string, taskId: string) {
+  const existing = await prisma.task.findUnique({ where: { id: taskId } });
+  if (!existing || existing.userId !== userId) {
+    throw new Error("Task not found");
+  }
+
+  return await prisma.task.delete({
+    where: { id: taskId }
+  });
+}
